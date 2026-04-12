@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Compile Update="FormErro.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="FormPrincipal.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="FormSobre.vb">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+</Project>

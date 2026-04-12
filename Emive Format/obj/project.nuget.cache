@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "a7689w7NQDM=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\mamed\\source\\repos\\Emive Format\\Emive Format\\Emive Format.vbproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\mamed\\.nuget\\packages\\system.codedom\\10.0.5\\system.codedom.10.0.5.nupkg.sha512",
+    "C:\\Users\\mamed\\.nuget\\packages\\system.management\\10.0.5\\system.management.10.0.5.nupkg.sha512"
+  ],
+  "logs": []
+}

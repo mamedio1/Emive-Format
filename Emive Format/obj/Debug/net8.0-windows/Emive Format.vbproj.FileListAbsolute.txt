@@ -1,0 +1,23 @@
+C:\Users\mamed\source\repos\Emive Format\Emive Format\bin\Debug\net8.0-windows\Emive Format.exe
+C:\Users\mamed\source\repos\Emive Format\Emive Format\bin\Debug\net8.0-windows\Emive Format.dll.config
+C:\Users\mamed\source\repos\Emive Format\Emive Format\bin\Debug\net8.0-windows\Emive Format.deps.json
+C:\Users\mamed\source\repos\Emive Format\Emive Format\bin\Debug\net8.0-windows\Emive Format.runtimeconfig.json
+C:\Users\mamed\source\repos\Emive Format\Emive Format\bin\Debug\net8.0-windows\Emive Format.dll
+C:\Users\mamed\source\repos\Emive Format\Emive Format\bin\Debug\net8.0-windows\Emive Format.pdb
+C:\Users\mamed\source\repos\Emive Format\Emive Format\bin\Debug\net8.0-windows\System.CodeDom.dll
+C:\Users\mamed\source\repos\Emive Format\Emive Format\bin\Debug\net8.0-windows\System.Management.dll
+C:\Users\mamed\source\repos\Emive Format\Emive Format\bin\Debug\net8.0-windows\runtimes\win\lib\net8.0\System.Management.dll
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive Format.vbproj.AssemblyReference.cache
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive_Format.FormPrincipal.resources
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive_Format.FormSobre.resources
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive Format.vbproj.GenerateResource.cache
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive Format.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive Format.AssemblyInfoInputs.cache
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive Format.AssemblyInfo.vb
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive Format.vbproj.CoreCompileInputs.cache
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive Fo.CB61B0E3.Up2Date
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive Format.dll
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\refint\Emive Format.dll
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive Format.pdb
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\Emive Format.genruntimeconfig.cache
+C:\Users\mamed\source\repos\Emive Format\Emive Format\obj\Debug\net8.0-windows\ref\Emive Format.dll
