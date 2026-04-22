@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\mamed\\source\\repos\\Emive Format\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{6E8A8DD9-8664-47AE-AA73-002607479E70}|Emive Format\\Emive Format.vbproj|c:\\users\\mamed\\source\\repos\\emive format\\emive format\\formprincipal.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}|Form",
-      "RelativeMoniker": "D:0:0:{6E8A8DD9-8664-47AE-AA73-002607479E70}|Emive Format\\Emive Format.vbproj|solutionrelative:emive format\\formprincipal.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}|Form"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{6E8A8DD9-8664-47AE-AA73-002607479E70}|Emive Format\\Emive Format.vbproj|c:\\users\\mamed\\source\\repos\\emive format\\emive format\\formprincipal.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{6E8A8DD9-8664-47AE-AA73-002607479E70}|Emive Format\\Emive Format.vbproj|solutionrelative:emive format\\formprincipal.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6E8A8DD9-8664-47AE-AA73-002607479E70}|Emive Format\\Emive Format.vbproj|c:\\users\\mamed\\source\\repos\\emive format\\emive format\\formprincipal.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}|Form",
+      "RelativeMoniker": "D:0:0:{6E8A8DD9-8664-47AE-AA73-002607479E70}|Emive Format\\Emive Format.vbproj|solutionrelative:emive format\\formprincipal.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}|Form"
     },
     {
       "AbsoluteMoniker": "D:0:0:{6E8A8DD9-8664-47AE-AA73-002607479E70}|Emive Format\\Emive Format.vbproj|c:\\users\\mamed\\source\\repos\\emive format\\emive format\\formsobre.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
@@ -26,7 +26,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Bookmark",
@@ -42,30 +42,29 @@
               "RelativeToolTip": "Emive Format\\FormSobre.vb",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2026-04-12T20:22:56.517Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-12T20:22:56.517Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "FormPrincipal.vb",
               "DocumentMoniker": "C:\\Users\\mamed\\source\\repos\\Emive Format\\Emive Format\\FormPrincipal.vb",
               "RelativeDocumentMoniker": "Emive Format\\FormPrincipal.vb",
-              "ToolTip": "C:\\Users\\mamed\\source\\repos\\Emive Format\\Emive Format\\FormPrincipal.vb*",
-              "RelativeToolTip": "Emive Format\\FormPrincipal.vb*",
-              "ViewState": "AgIAAAEAAAAAAAAAAAAmwBEAAAAIAAAAAAAAAA==",
+              "ToolTip": "C:\\Users\\mamed\\source\\repos\\Emive Format\\Emive Format\\FormPrincipal.vb",
+              "RelativeToolTip": "Emive Format\\FormPrincipal.vb",
+              "ViewState": "AgIAAAQCAAAAAAAAAADwvxcCAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-04-11T16:53:42.461Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "FormPrincipal.vb [Projeto]",
               "DocumentMoniker": "C:\\Users\\mamed\\source\\repos\\Emive Format\\Emive Format\\FormPrincipal.vb",
               "RelativeDocumentMoniker": "Emive Format\\FormPrincipal.vb",
-              "ToolTip": "C:\\Users\\mamed\\source\\repos\\Emive Format\\Emive Format\\FormPrincipal.vb [Projeto]*",
-              "RelativeToolTip": "Emive Format\\FormPrincipal.vb [Projeto]*",
+              "ToolTip": "C:\\Users\\mamed\\source\\repos\\Emive Format\\Emive Format\\FormPrincipal.vb [Projeto]",
+              "RelativeToolTip": "Emive Format\\FormPrincipal.vb [Projeto]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2026-04-11T16:53:38.821Z",
               "EditorCaption": " [Projeto]"

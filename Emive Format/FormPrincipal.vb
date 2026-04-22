@@ -45,11 +45,11 @@ Public Class FormPrincipal
         panelTop.Controls.Add(lblTitulo)
 
         Dim lblSubtitulo As New Label With {
-            .Text = "Sistema de Gerenciamento de Cartões SD - Câmeras EZVIZ      -  Filial Brasília",
+            .Text = "Sistema de Gerenciamento de Cartões SD - Câmeras EZVIZ - Filial Brasília",
             .Font = New Font("Segoe UI", 10),
             .ForeColor = Color.FromArgb(236, 240, 241),
             .AutoSize = True,
-            .Location = New Point(25, 60)  ' CORREÇÃO: era Y=60, transbordava o panelTop (Height=80)
+            .Location = New Point(25, 60)
         }
         panelTop.Controls.Add(lblSubtitulo)
 
@@ -83,6 +83,7 @@ Public Class FormPrincipal
             .Font = New Font("Segoe UI", 10)
         }
         gbUnidade.Controls.Add(cboUnidades)
+        AddHandler cboUnidades.SelectedIndexChanged, AddressOf CboUnidades_SelectedIndexChanged
 
         Dim btnAtualizar As New Button With {
             .Name = "btnAtualizar",
@@ -156,23 +157,23 @@ Public Class FormPrincipal
         gbFormato.Controls.Add(txtNome)
 
         Dim chkQuick As New CheckBox With {
-    .Name = "chkQuick",
-    .Text = "Formatação Rápida",
-    .Location = New Point(360, 20),
-    .AutoSize = True,
-    .Checked = True,
-    .Font = New Font("Segoe UI", 9)
-}
+            .Name = "chkQuick",
+            .Text = "Formatação Rápida",
+            .Location = New Point(360, 20),
+            .AutoSize = True,
+            .Checked = True,
+            .Font = New Font("Segoe UI", 9)
+        }
         gbFormato.Controls.Add(chkQuick)
 
         Dim chkVerificar As New CheckBox With {
-    .Name = "chkVerificar",
-    .Text = "Verificar erros após formatação",
-    .Location = New Point(360, 42),
-    .AutoSize = True,
-    .Checked = True,    '
-    .Font = New Font("Segoe UI", 9)
-}
+            .Name = "chkVerificar",
+            .Text = "Verificar erros após formatação",
+            .Location = New Point(360, 42),
+            .AutoSize = True,
+            .Checked = False,
+            .Font = New Font("Segoe UI", 9)
+        }
         gbFormato.Controls.Add(chkVerificar)
 
         Dim chkFisica As New CheckBox With {
@@ -312,10 +313,14 @@ Public Class FormPrincipal
         }
         gbLog.Controls.Add(progressBar)
     End Sub
+
+    Private Sub CboUnidades_SelectedIndexChanged(sender As Object, e As EventArgs)
+        AtualizarInfoUnidade()
+    End Sub
+
     Private Sub CarregarUnidades()
         Dim cbo As ComboBox = Me.Controls.Find("cboUnidades", True).FirstOrDefault()
         If cbo Is Nothing Then Return
-
         cbo.Items.Clear()
 
         For Each drive As DriveInfo In DriveInfo.GetDrives()
@@ -328,13 +333,10 @@ Public Class FormPrincipal
 
         Try
             Dim searcher As New ManagementObjectSearcher("SELECT * FROM Win32_DiskDrive WHERE InterfaceType='USB' OR MediaType='Removable Media'")
-
             For Each disk As ManagementObject In searcher.Get()
                 Dim partitionSearcher As New ManagementObjectSearcher($"ASSOCIATORS OF {{Win32_DiskDrive.DeviceID='{disk("DeviceID")}'}} WHERE AssocClass=Win32_DiskDriveToDiskPartition")
-
                 For Each partition As ManagementObject In partitionSearcher.Get()
                     Dim logicalSearcher As New ManagementObjectSearcher($"ASSOCIATORS OF {{Win32_DiskPartition.DeviceID='{partition("DeviceID")}'}} WHERE AssocClass=Win32_LogicalDiskToPartition")
-
                     For Each logical As ManagementObject In logicalSearcher.Get()
                         Dim driveLetter As String = logical("DeviceID").ToString() & "\"
                         If Not cbo.Items.Contains(driveLetter) Then
@@ -342,36 +344,30 @@ Public Class FormPrincipal
                         End If
                     Next
                 Next
-
                 If partitionSearcher.Get().Count = 0 Then
                     Dim diskNumber As String = disk("Index").ToString()
                     Dim diskSize As String = ""
-
                     Try
                         Dim sizeGB As Double = CDbl(disk("Size")) / 1024 / 1024 / 1024
                         diskSize = $" ({sizeGB:F2} GB)"
                     Catch
                     End Try
-
                     Dim displayText As String = $"Disco {diskNumber} [NÃO FORMATADO]{diskSize}"
                     cbo.Items.Add(displayText)
                 End If
             Next
-
         Catch ex As Exception
             AdicionarLog($"Aviso ao detectar dispositivos USB: {ex.Message}", Color.Orange)
         End Try
 
         Try
             Dim logicalSearcher As New ManagementObjectSearcher("SELECT * FROM Win32_LogicalDisk WHERE DriveType=2")
-
             For Each logicalDisk As ManagementObject In logicalSearcher.Get()
                 Dim driveLetter As String = logicalDisk("DeviceID").ToString() & "\"
                 If Not cbo.Items.Contains(driveLetter) Then
                     cbo.Items.Add(driveLetter)
                 End If
             Next
-
         Catch ex As Exception
             AdicionarLog($"Aviso ao detectar unidades lógicas: {ex.Message}", Color.Orange)
         End Try
@@ -388,12 +384,10 @@ Public Class FormPrincipal
     Private Sub AtualizarInfoUnidade()
         Dim cbo As ComboBox = Me.Controls.Find("cboUnidades", True).FirstOrDefault()
         Dim lblInfo As Label = Me.Controls.Find("lblInfo", True).FirstOrDefault()
-
         If cbo Is Nothing OrElse lblInfo Is Nothing OrElse cbo.SelectedItem Is Nothing Then Return
 
         Try
             selectedDrive = cbo.SelectedItem.ToString()
-
             If selectedDrive.Contains("[NÃO FORMATADO]") Then
                 lblInfo.Text = "Status: CARTÃO NÃO FORMATADO - Clique em FORMATAR para preparar"
                 lblInfo.ForeColor = Color.FromArgb(192, 57, 43)
@@ -403,12 +397,10 @@ Public Class FormPrincipal
 
             Try
                 Dim drive As New DriveInfo(selectedDrive)
-
                 If drive.IsReady Then
                     Dim totalGB As Double = drive.TotalSize / 1024 / 1024 / 1024
                     Dim livreGB As Double = drive.AvailableFreeSpace / 1024 / 1024 / 1024
                     Dim usadoGB As Double = totalGB - livreGB
-
                     lblInfo.Text = $"Tipo: {drive.DriveFormat} | Total: {totalGB:F2} GB | Usado: {usadoGB:F2} GB | Livre: {livreGB:F2} GB"
                     lblInfo.ForeColor = Color.FromArgb(52, 73, 94)
                     AdicionarLog($"✓ Unidade {selectedDrive} detectada - {totalGB:F2} GB ({drive.DriveFormat})", Color.LightGreen)
@@ -417,7 +409,6 @@ Public Class FormPrincipal
                     lblInfo.ForeColor = Color.FromArgb(230, 126, 34)
                     AdicionarLog($"⚠ Unidade {selectedDrive} não está pronta", Color.Orange)
                 End If
-
             Catch ex As Exception
                 Dim infoRAW As String = ObterInfoDiscoRAW(selectedDrive)
                 If infoRAW <> "" Then
@@ -429,7 +420,6 @@ Public Class FormPrincipal
                 End If
                 AdicionarLog($"⚠ Erro ao ler unidade {selectedDrive}: {ex.Message}", Color.Orange)
             End Try
-
         Catch ex As Exception
             lblInfo.Text = "Erro ao obter informações da unidade"
             lblInfo.ForeColor = Color.Red
@@ -440,13 +430,10 @@ Public Class FormPrincipal
     Private Function ObterInfoDiscoRAW(drivePath As String) As String
         Try
             Dim driveLetter As String = drivePath.Replace(":\", "").Replace("\", "")
-
             Dim searcher As New ManagementObjectSearcher($"SELECT * FROM Win32_LogicalDisk WHERE DeviceID='{driveLetter}:'")
-
             For Each disk As ManagementObject In searcher.Get()
                 Dim size As String = "Desconhecido"
                 Dim fileSystem As String = "RAW ou Não Formatado"
-
                 Try
                     If disk("Size") IsNot Nothing Then
                         Dim sizeGB As Double = CDbl(disk("Size")) / 1024 / 1024 / 1024
@@ -454,20 +441,16 @@ Public Class FormPrincipal
                     End If
                 Catch
                 End Try
-
                 Try
                     If disk("FileSystem") IsNot Nothing Then
                         fileSystem = disk("FileSystem").ToString()
                     End If
                 Catch
                 End Try
-
                 Return $"Tipo: {fileSystem} | Tamanho: {size} | Status: Requer formatação"
             Next
-
         Catch ex As Exception
         End Try
-
         Return ""
     End Function
 
@@ -492,7 +475,6 @@ Public Class FormPrincipal
                 "Disco Não Formatado",
                 MessageBoxButtons.YesNoCancel,
                 MessageBoxIcon.Warning)
-
             If resultadoNaoFormatado = DialogResult.Cancel Then
                 Return
             ElseIf resultadoNaoFormatado = DialogResult.Yes Then
@@ -538,7 +520,6 @@ Public Class FormPrincipal
                     "Confirmação Final - Formatação Física",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Exclamation)
-
                 If resultadoFinal <> DialogResult.Yes Then
                     Return
                 End If
@@ -595,11 +576,11 @@ Public Class FormPrincipal
             "Confirmar Cancelamento",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning)
-
         If resultado = DialogResult.Yes Then
             CancelarOperacao()
         End If
     End Sub
+
     Private Sub ConfigurarBackgroundWorker()
         backgroundWorker.WorkerReportsProgress = True
         backgroundWorker.WorkerSupportsCancellation = True
@@ -618,17 +599,16 @@ Public Class FormPrincipal
                 ExecutarRecuperacao(worker)
         End Select
     End Sub
-
     Private Sub ExecutarFormatacao(worker As System.ComponentModel.BackgroundWorker)
         Try
             Dim formatacaoFisica As Boolean = False
-
             Me.Invoke(Sub()
                           Dim chkFisica As CheckBox = Me.Controls.Find("chkFisica", True).FirstOrDefault()
                           If chkFisica IsNot Nothing Then
                               formatacaoFisica = chkFisica.Checked
                           End If
                       End Sub)
+
             If formatacaoFisica Then
                 ExecutarFormatacaoFisica(worker)
                 Return
@@ -636,7 +616,6 @@ Public Class FormPrincipal
 
             worker.ReportProgress(5, "Preparando unidade...")
             Thread.Sleep(500)
-
             worker.ReportProgress(10, "Desmontando volume...")
             Thread.Sleep(800)
 
@@ -652,7 +631,6 @@ Public Class FormPrincipal
                           chkVerificar = Me.Controls.Find("chkVerificar", True).FirstOrDefault()
                       End Sub)
 
-
             Dim formatoSelecionado As String = ""
             Dim nomeVolume As String = "EMIVE_CAM"
             Dim quickFormat As Boolean = True
@@ -662,29 +640,22 @@ Public Class FormPrincipal
                           If cboFormato IsNot Nothing Then
                               formatoSelecionado = cboFormato.Text
                           End If
-
                           If txtNome IsNot Nothing Then
                               nomeVolume = txtNome.Text
                           End If
-
                           If chkQuick IsNot Nothing Then
                               quickFormat = chkQuick.Checked
                           Else
-                              quickFormat = True  ' Se não encontrar, usa formatação rápida
+                              quickFormat = True
                           End If
-
                           If chkVerificar IsNot Nothing Then
                               verificar = chkVerificar.Checked
                           Else
-                              verificar = False   ' Se não encontrar, NÃO verifica
+                              verificar = False
                           End If
                       End Sub)
-            ' ADICIONE ESTAS LINHAS DE DEBUG:
-            worker.ReportProgress(22, $"DEBUG: quickFormat = {quickFormat}")
-            worker.ReportProgress(23, $"DEBUG: verificar = {verificar}")
 
             Dim fileSystem As String = "FAT32"
-
             If formatoSelecionado.Contains("exFAT") Then
                 fileSystem = "exFAT"
             ElseIf formatoSelecionado.Contains("NTFS") Then
@@ -697,7 +668,6 @@ Public Class FormPrincipal
 
             worker.ReportProgress(20, $"Formato selecionado: {fileSystem}")
             Thread.Sleep(500)
-
             worker.ReportProgress(25, "Iniciando formatação...")
 
             Dim formatado As Boolean = FormatarDisco(selectedDrive.Replace("\", ""), fileSystem, nomeVolume, quickFormat, worker)
@@ -706,21 +676,14 @@ Public Class FormPrincipal
                 worker.ReportProgress(86, "Formatação concluída com sucesso!")
                 Thread.Sleep(500)
 
+                ' 👇 AQUI CHAMA A ROTINA EZVIZ
                 If formatoSelecionado.Contains("EZVIZ") Then
-                    worker.ReportProgress(88, "Aplicando otimizações EZVIZ...")
+                    worker.ReportProgress(88, "Aplicando estrutura EZVIZ...")
                     Thread.Sleep(1000)
-                    AplicarOtimizacoesEZVIZ(worker)
-                    worker.ReportProgress(92, "✓ Otimizações EZVIZ aplicadas!")
+                    PrepararCartaoEZVIZ(worker)
+                Else
+                    worker.ReportProgress(100, "✓ Processo completo!")
                 End If
-
-                'If verificar Then
-                'worker.ReportProgress(93, "Iniciando verificação de integridade...")
-                'worker.ReportProgress(94, "⚠ Esta etapa pode demorar vários minutos...")
-                'Thread.Sleep(500)
-                'ExecutarVerificacaoRapida(selectedDrive, worker)
-                'End If
-
-                worker.ReportProgress(100, "✓ Processo completo!")
             Else
                 Throw New Exception("Falha na formatação")
             End If
@@ -734,11 +697,8 @@ Public Class FormPrincipal
         Dim processo As Process = Nothing
         Try
             drive = drive.Replace(":", "")
-
             worker.ReportProgress(30, "Executando FORMAT...")
 
-            ' CORREÇÃO: UseShellExecute=False é necessário para redirecionar stdin/stdout.
-            ' Verb="runas" incompatível com UseShellExecute=False — elevação via manifesto (requireAdministrator).
             processo = New Process()
             processo.StartInfo.FileName = "cmd.exe"
             processo.StartInfo.UseShellExecute = False
@@ -746,55 +706,36 @@ Public Class FormPrincipal
             processo.StartInfo.RedirectStandardOutput = True
             processo.StartInfo.RedirectStandardError = True
             processo.StartInfo.CreateNoWindow = True
-
             processo.Start()
 
             Dim quickParam As String = If(quick, "/Q", "")
             Dim comando As String = $"format {drive}: /FS:{fileSystem} /V:{label} {quickParam} /Y"
-
             processo.StandardInput.WriteLine(comando)
             processo.StandardInput.WriteLine("exit")
             processo.StandardInput.Flush()
             processo.StandardInput.Close()
 
-            ' ---------------------------------------------------------------
-            ' CORREÇÃO PRINCIPAL: ler stdout em thread separada para não bloquear
-            ' e calcular progresso real a partir das linhas do FORMAT.
-            ' O formato emite linhas como "  10 por cento concluído." (pt-BR)
-            ' ou "  10 percent complete." (en-US) — capturamos ambos.
-            ' ---------------------------------------------------------------
             Dim ultimoPercentualLido As Integer = 35
-            Dim ultimaAtividadeMs As Long = Environment.TickCount64
-
             Dim readerThread As New Thread(Sub()
                                                Try
                                                    Dim line As String
                                                    Do
                                                        line = processo.StandardOutput.ReadLine()
                                                        If line Is Nothing Then Exit Do
-
-                                                       ' Detectar percentual reportado pelo FORMAT
                                                        Dim linhaLower As String = line.ToLower().Trim()
                                                        Dim pct As Integer = ExtrairPercentualFormat(linhaLower)
                                                        If pct > 0 Then
-                                                           ' Mapear 0-100% do FORMAT para faixa 35-84% da UI
                                                            Dim progressoMapeado As Integer = 35 + CInt(pct * 0.49)
                                                            ultimoPercentualLido = Math.Min(progressoMapeado, 84)
-                                                           ultimaAtividadeMs = Environment.TickCount64
                                                            worker.ReportProgress(ultimoPercentualLido, $"Formatando... {pct}% concluído")
                                                        End If
                                                    Loop
                                                Catch
-                                                   ' Stream fechado normalmente ao processo terminar
                                                End Try
                                            End Sub)
             readerThread.IsBackground = True
             readerThread.Start()
 
-            ' CORREÇÃO: timeout proporcional ao modo.
-            ' Quick format: 3 min (pode travar por permissão/hardware).
-            ' Full format: SEM timeout automático — o processo pode levar horas
-            '              em cartões grandes. O usuário cancela manualmente.
             Dim timeoutMs As Long = If(quick, 3L * 60 * 1000, Long.MaxValue)
             Dim tempoDecorridoMs As Long = 0
             Dim ultimoProgressoReportado As Integer = 35
@@ -813,21 +754,17 @@ Public Class FormPrincipal
                     Throw New OperationCanceledException("Formatação cancelada pelo usuário")
                 End If
 
-                ' Progresso real lido pelo readerThread tem prioridade.
-                ' Se não houve leitura de percentual, avançar simulação até 84%.
                 If ultimoPercentualLido > ultimoProgressoReportado Then
                     ultimoProgressoReportado = ultimoPercentualLido
                 ElseIf ultimoProgressoReportado < 84 Then
                     ultimoProgressoReportado = Math.Min(ultimoProgressoReportado + 2, 84)
                     worker.ReportProgress(ultimoProgressoReportado, "Formatando...")
                 Else
-                    ' Em 84%, reportar tempo decorrido sem timeout para full format
                     Dim minutos As Integer = CInt(tempoDecorridoMs / 60000)
                     Dim segundos As Integer = CInt((tempoDecorridoMs Mod 60000) / 1000)
                     worker.ReportProgress(84, $"Finalizando... ({minutos}min {segundos}s) — aguarde, NÃO cancele")
                 End If
 
-                ' Timeout apenas no modo rápido
                 If quick AndAlso tempoDecorridoMs > timeoutMs Then
                     worker.ReportProgress(84, "⚠ Timeout na formatação rápida — verifique o leitor de cartão")
                     Try
@@ -864,18 +801,10 @@ Public Class FormPrincipal
         End Try
     End Function
 
-    ''' <summary>
-    ''' Extrai o percentual de progresso das linhas emitidas pelo comando FORMAT.
-    ''' Suporta pt-BR ("10 por cento concluído") e en-US ("10 percent complete").
-    ''' </summary>
     Private Function ExtrairPercentualFormat(linha As String) As Integer
         Try
-            ' Formato pt-BR: "  10 por cento concluído."
-            ' Formato en-US: "  10 percent complete."
-            ' Ambos começam com número antes de "por cento" ou "percent"
             If linha.Contains("por cento") OrElse linha.Contains("percent") Then
-                Dim partes() As String = linha.Split(New Char() {" "c, "."c, Chr(9)},
-                                                      StringSplitOptions.RemoveEmptyEntries)
+                Dim partes() As String = linha.Split(New Char() {" "c, "."c, Chr(9)}, StringSplitOptions.RemoveEmptyEntries)
                 For Each parte As String In partes
                     Dim n As Integer
                     If Integer.TryParse(parte, n) AndAlso n >= 0 AndAlso n <= 100 Then
@@ -888,82 +817,97 @@ Public Class FormPrincipal
         Return 0
     End Function
 
-    Private Sub AplicarOtimizacoesEZVIZ(worker As System.ComponentModel.BackgroundWorker)
+    ' ═══════════════════════════════════════════════════
+    ' 🎯 ROTINAS EZVIZ - NOVAS ADICIONADAS
+    ' ═══════════════════════════════════════════════════
+
+    Private Sub PrepararCartaoEZVIZ(worker As System.ComponentModel.BackgroundWorker)
         Try
-            worker.ReportProgress(93, "Aplicando otimizações EZVIZ...")
-            Thread.Sleep(500)
+            worker.ReportProgress(86, "✓ Formatação concluída!")
+            worker.ReportProgress(87, "Preparando estrutura EZVIZ...")
 
-            ' REMOVIDO: Criação de pastas automáticas
-            ' A câmera EZVIZ criará as pastas necessárias automaticamente
+            Dim drivePath As String = selectedDrive
+            If Not drivePath.EndsWith("\") Then drivePath &= "\"
 
-            worker.ReportProgress(95, "✓ Cartão preparado para EZVIZ!")
-            worker.ReportProgress(96, "ℹ A câmera criará as pastas necessárias no primeiro uso")
+            ' 1️⃣ CRIAR PASTAS EZVIZ
+            Dim pastaEZVIZ As String = Path.Combine(drivePath, "EZVIZ")
+            If Not Directory.Exists(pastaEZVIZ) Then
+                Directory.CreateDirectory(pastaEZVIZ)
+                Directory.CreateDirectory(Path.Combine(pastaEZVIZ, "Record"))
+                Directory.CreateDirectory(Path.Combine(pastaEZVIZ, "Picture"))
+                Directory.CreateDirectory(Path.Combine(pastaEZVIZ, "Log"))
+                worker.ReportProgress(87, "✓ Pastas EZVIZ criadas!")
+            End If
+
+            ' 2️⃣ CRIAR CONFIG.INI
+            worker.ReportProgress(87, "Criando arquivo config.ini...")
+            Dim configPath As String = Path.Combine(pastaEZVIZ, "config.ini")
+            Using sw As New StreamWriter(configPath)
+                sw.WriteLine("[EZVIZ]")
+                sw.WriteLine("Version=2.0")
+                sw.WriteLine("Format=Physical")
+                sw.WriteLine($"Date={DateTime.Now:yyyy-MM-dd HH:mm:ss}")
+                sw.WriteLine("ClusterSize=64KB")
+                sw.WriteLine("LowLevelFormat=True")
+            End Using
+            worker.ReportProgress(87, "✓ Arquivo config.ini criado!")
+
+            ' 3️⃣ CRIAR 236 ARQUIVOS .MP4 - VERSÃO RÁPIDA ⚡
+            worker.ReportProgress(88, "Criando 236 arquivos de vídeo (30-60 segundos)...")
+            Dim tamanhoMP4 As Long = 268435456 ' 256 MB
+            Dim pastaRecord As String = Path.Combine(pastaEZVIZ, "Record")
+
+            For i As Integer = 0 To 235
+                Dim nomeArquivo As String = $"hiv{i:D5}.mp4"
+                Dim caminhoCompleto As String = Path.Combine(pastaRecord, nomeArquivo)
+
+                ' 🚀 MÉTODO RÁPIDO: SetLength ao invés de escrever bloco por bloco
+                Using fs As New FileStream(caminhoCompleto, FileMode.Create, FileAccess.Write)
+                    fs.SetLength(tamanhoMP4) ' Reserva espaço instantaneamente
+                End Using
+
+                If i Mod 10 = 0 Then
+                    Dim percentual As Integer = 88 + CInt((i / 236) * 4)
+                    worker.ReportProgress(percentual, $"Criando: {i + 1}/236...")
+                End If
+            Next
+
+            worker.ReportProgress(92, "✓ 236 arquivos .mp4 criados!")
+
+            ' 4️⃣ CRIAR ARQUIVOS .BIN - TAMBÉM USANDO SetLength
+            worker.ReportProgress(93, "Criando arquivos de índice...")
+            CriarArquivoBinRapido(Path.Combine(pastaEZVIZ, "index00.bin"), 16777216)
+            CriarArquivoBinRapido(Path.Combine(pastaEZVIZ, "index01.bin"), 16777216)
+            CriarArquivoBinRapido(Path.Combine(pastaEZVIZ, "logMainFile.bin"), 32004192)
+            CriarArquivoBinRapido(Path.Combine(pastaEZVIZ, "logCurFile.bin"), 16002048)
+
+            worker.ReportProgress(99, "✓ Índices criados!")
+            worker.ReportProgress(100, "✓ Cartão EZVIZ pronto para a câmera!")
 
         Catch ex As Exception
-            worker.ReportProgress(-1, $"Erro ao aplicar otimizações: {ex.Message}")
+            worker.ReportProgress(-1, $"❌ Erro: {ex.Message}")
         End Try
     End Sub
 
-    Private Sub ExecutarVerificacaoRapida(drivePath As String, worker As System.ComponentModel.BackgroundWorker)
-        Try
-            Dim drive As String = drivePath.Replace("\", "").Replace(":", "")
-
-            worker.ReportProgress(87, "Executando verificação rápida do disco...")
-
-            Dim processo As New Process()
-            processo.StartInfo.FileName = "cmd.exe"
-            processo.StartInfo.Arguments = $"/c chkdsk {drive}:"
-            processo.StartInfo.UseShellExecute = False
-            processo.StartInfo.RedirectStandardOutput = True
-            processo.StartInfo.CreateNoWindow = True
-
-            processo.Start()
-
-            Dim progresso As Integer = 88
-            Dim contador As Integer = 0
-            While Not processo.HasExited
-                contador += 1
-                If progresso < 98 Then
-                    If contador Mod 3 = 0 Then
-                        progresso += 1
-                        worker.ReportProgress(progresso, "Verificando disco (isso pode demorar)...")
-                    End If
-                    Thread.Sleep(1000)
-                Else
-                    worker.ReportProgress(98, "Finalizando verificação (aguarde)...")
-                    Thread.Sleep(2000)
-                End If
-            End While
-
-            processo.WaitForExit()
-
-            If processo.ExitCode = 0 Then
-                worker.ReportProgress(99, "✓ Verificação concluída com sucesso!")
-            Else
-                worker.ReportProgress(99, "⚠ Verificação concluída com avisos")
-            End If
-
-        Catch ex As Exception
-            worker.ReportProgress(99, $"Verificação finalizada (possível erro: {ex.Message})")
-        End Try
+    Private Sub CriarArquivoBinRapido(caminho As String, tamanho As Long)
+        Using fs As New FileStream(caminho, FileMode.Create, FileAccess.Write)
+            fs.SetLength(tamanho) ' 🚀 Método instantâneo
+        End Using
     End Sub
 
     Private Sub ExecutarVerificacao(worker As System.ComponentModel.BackgroundWorker)
         Try
             worker.ReportProgress(10, "Analisando sistema de arquivos...")
             Thread.Sleep(1000)
-
             worker.ReportProgress(25, "Verificando setores...")
             Thread.Sleep(1500)
-
             worker.ReportProgress(40, "Checando fragmentação...")
             Thread.Sleep(1200)
 
-            ' CORREÇÃO: selectedDrive é campo da UI thread. Capturar via Invoke antes de usar na worker thread.
             Dim driveLocal As String = ""
             Me.Invoke(Sub() driveLocal = selectedDrive)
-            Dim drive As String = driveLocal.Replace("\", "").Replace(":", "")
 
+            Dim drive As String = driveLocal.Replace("\", "").Replace(":", "")
             worker.ReportProgress(50, "Executando CHKDSK...")
 
             Dim processo As New Process()
@@ -975,8 +919,8 @@ Public Class FormPrincipal
 
             Try
                 processo.Start()
-
                 Dim progresso As Integer = 55
+
                 While Not processo.HasExited
                     If progresso < 90 Then
                         progresso += 5
@@ -986,7 +930,6 @@ Public Class FormPrincipal
                 End While
 
                 processo.WaitForExit()
-
                 worker.ReportProgress(95, "Analisando resultados...")
                 Thread.Sleep(500)
 
@@ -1009,18 +952,15 @@ Public Class FormPrincipal
         Try
             worker.ReportProgress(10, "Iniciando análise profunda...")
             Thread.Sleep(1000)
-
             worker.ReportProgress(20, "Identificando setores danificados...")
             Thread.Sleep(1500)
-
             worker.ReportProgress(35, "Tentando recuperar dados...")
             Thread.Sleep(2000)
 
-            ' CORREÇÃO: selectedDrive é campo da UI thread. Capturar via Invoke antes de usar na worker thread.
             Dim driveLocal As String = ""
             Me.Invoke(Sub() driveLocal = selectedDrive)
-            Dim drive As String = driveLocal.Replace("\", "").Replace(":", "")
 
+            Dim drive As String = driveLocal.Replace("\", "").Replace(":", "")
             worker.ReportProgress(50, "Executando reparo automático...")
 
             Dim processo As New Process()
@@ -1032,8 +972,8 @@ Public Class FormPrincipal
 
             Try
                 processo.Start()
-
                 Dim progresso As Integer = 55
+
                 While Not processo.HasExited
                     If progresso < 90 Then
                         progresso += 3
@@ -1043,7 +983,6 @@ Public Class FormPrincipal
                 End While
 
                 processo.WaitForExit()
-
                 worker.ReportProgress(92, "Finalizando recuperação...")
                 Thread.Sleep(800)
 
@@ -1061,6 +1000,7 @@ Public Class FormPrincipal
             worker.ReportProgress(-1, $"Erro crítico: {ex.Message}")
         End Try
     End Sub
+
     Private Sub ExecutarFormatacaoFisica(worker As System.ComponentModel.BackgroundWorker)
         Try
             worker.ReportProgress(2, "═══ FORMATAÇÃO FÍSICA INICIADA ═══")
@@ -1098,23 +1038,15 @@ Public Class FormPrincipal
         Dim processo As Process = Nothing
         Dim progresso As Integer = 15
         Dim tempoDecorrido As Integer = 0
-        Dim minutos As Integer = 0
-        Dim segundos As Integer = 0
-        Dim horas As Integer = 0
-        Dim minutosRestantes As Integer = 0
-        Dim tempoTexto As String = ""
-        Dim dica As String = ""
 
         Try
             worker.ReportProgress(6, "Identificando número do disco...")
             Thread.Sleep(500)
 
             numeroDisco = ObterNumeroDisco(drive)
-
             If numeroDisco < 0 Then
                 worker.ReportProgress(7, "Procurando discos removíveis...")
                 numeroDisco = ObterPrimeiroDiscoRemovivel()
-
                 If numeroDisco < 0 Then
                     Throw New Exception("Não foi possível identificar o número do disco.")
                 End If
@@ -1126,7 +1058,6 @@ Public Class FormPrincipal
             Thread.Sleep(500)
 
             scriptPath = Path.Combine(Path.GetTempPath(), $"diskpart_clean_{DateTime.Now:yyyyMMddHHmmss}.txt")
-
             Using sw As New StreamWriter(scriptPath, False, System.Text.Encoding.ASCII)
                 sw.WriteLine($"select disk {numeroDisco}")
                 sw.WriteLine("clean all")
@@ -1166,22 +1097,24 @@ Public Class FormPrincipal
                 If progresso < 23 Then
                     progresso += 1
                     tempoDecorrido += 3
-                    minutos = tempoDecorrido \ 60
-                    segundos = tempoDecorrido Mod 60
+                    Dim minutos As Integer = tempoDecorrido \ 60
+                    Dim segundos As Integer = tempoDecorrido Mod 60
                     worker.ReportProgress(progresso, $"Limpando... ({minutos}min {segundos}s)")
                     Thread.Sleep(3000)
                 Else
                     tempoDecorrido += 10
-                    minutos = tempoDecorrido \ 60
-                    horas = minutos \ 60
-                    minutosRestantes = minutos Mod 60
+                    Dim minutos As Integer = tempoDecorrido \ 60
+                    Dim horas As Integer = minutos \ 60
+                    Dim minutosRestantes As Integer = minutos Mod 60
 
+                    Dim tempoTexto As String
                     If horas > 0 Then
                         tempoTexto = $"{horas}h {minutosRestantes}min"
                     Else
                         tempoTexto = $"{minutos} min"
                     End If
 
+                    Dim dica As String
                     If minutos < 30 Then
                         dica = " | Est: 30min-8h"
                     ElseIf minutos < 120 Then
@@ -1212,7 +1145,6 @@ Public Class FormPrincipal
                 Catch
                 End Try
             End If
-
             If scriptPath <> "" AndAlso File.Exists(scriptPath) Then
                 Try
                     File.Delete(scriptPath)
@@ -1245,8 +1177,8 @@ Public Class FormPrincipal
                 processo.StartInfo.UseShellExecute = False
                 processo.StartInfo.RedirectStandardOutput = True
                 processo.StartInfo.CreateNoWindow = True
-
                 processo.Start()
+
                 Dim output As String = processo.StandardOutput.ReadToEnd()
                 processo.WaitForExit()
 
@@ -1260,7 +1192,6 @@ Public Class FormPrincipal
             End If
 
             Dim searcher As New ManagementObjectSearcher("SELECT * FROM Win32_DiskDrive WHERE MediaType='Removable Media' OR InterfaceType='USB'")
-
             For Each disk As ManagementObject In searcher.Get()
                 Dim diskIndex As Integer
                 If Integer.TryParse(disk("Index").ToString(), diskIndex) Then
@@ -1270,34 +1201,27 @@ Public Class FormPrincipal
 
         Catch ex As Exception
         End Try
-
         Return -1
     End Function
 
     Private Function ObterPrimeiroDiscoRemovivel() As Integer
         Try
             Dim searcher As New ManagementObjectSearcher("SELECT * FROM Win32_DiskDrive WHERE MediaType='Removable Media' OR InterfaceType='USB'")
-
             For Each disk As ManagementObject In searcher.Get()
                 Dim diskIndex As Integer
                 If Integer.TryParse(disk("Index").ToString(), diskIndex) Then
                     Return diskIndex
                 End If
             Next
-
         Catch ex As Exception
         End Try
-
         Return -1
     End Function
-
     Private Sub RecriarParticao(drive As String, worker As System.ComponentModel.BackgroundWorker)
         Try
             Dim numeroDisco As Integer = ObterNumeroDisco(drive)
-
             If numeroDisco < 0 Then
                 numeroDisco = ObterPrimeiroDiscoRemovivel()
-
                 If numeroDisco < 0 Then
                     Throw New Exception("Não foi possível identificar o disco para criar partição")
                 End If
@@ -1307,7 +1231,6 @@ Public Class FormPrincipal
             Thread.Sleep(500)
 
             Dim letraDisponivel As String = ObterLetraDisponivel()
-
             Dim scriptPath As String = Path.Combine(Path.GetTempPath(), $"diskpart_create_{DateTime.Now:yyyyMMddHHmmss}.txt")
 
             Try
@@ -1363,12 +1286,10 @@ Public Class FormPrincipal
                 End If
 
                 worker.ReportProgress(43, "✓ Partição criada com sucesso!")
-
                 If letraDisponivel <> "" Then
                     selectedDrive = letraDisponivel & ":\"
                     worker.ReportProgress(44, $"Nova letra de unidade: {selectedDrive}")
                 End If
-
                 Thread.Sleep(2000)
 
             Catch ex As OperationCanceledException
@@ -1394,24 +1315,21 @@ Public Class FormPrincipal
     Private Function ObterLetraDisponivel() As String
         Try
             Dim letrasUsadas As New List(Of String)
-
             For Each drive As DriveInfo In DriveInfo.GetDrives()
                 letrasUsadas.Add(drive.Name.Substring(0, 1).ToUpper())
             Next
 
             Dim letrasDisponiveis() As String = {"E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
-
             For Each letra As String In letrasDisponiveis
                 If Not letrasUsadas.Contains(letra) Then
                     Return letra
                 End If
             Next
-
         Catch ex As Exception
         End Try
-
         Return ""
     End Function
+
     Private Sub FormatarComVerificacaoSetores(drive As String, worker As System.ComponentModel.BackgroundWorker)
         Try
             Dim cboFormato As ComboBox = Nothing
@@ -1437,14 +1355,12 @@ Public Class FormPrincipal
             worker.ReportProgress(46, $"Formatando como {fileSystem} com verificação completa...")
             worker.ReportProgress(47, "⚠ Formatação SEM modo rápido - verificando cada setor...")
 
-            ' CORREÇÃO: Verb="runas" incompatível com UseShellExecute=False — removido.
             Dim processo As New Process()
             processo.StartInfo.FileName = "cmd.exe"
             processo.StartInfo.UseShellExecute = False
             processo.StartInfo.RedirectStandardInput = True
             processo.StartInfo.RedirectStandardOutput = True
             processo.StartInfo.CreateNoWindow = True
-
             processo.Start()
 
             processo.StandardInput.WriteLine($"format {drive}: /FS:{fileSystem} /V:{nomeVolume} /Y")
@@ -1470,7 +1386,6 @@ Public Class FormPrincipal
             End While
 
             processo.WaitForExit()
-
             worker.ReportProgress(69, "✓ Formatação com verificação concluída!")
 
         Catch ex As OperationCanceledException
@@ -1485,11 +1400,8 @@ Public Class FormPrincipal
         Try
             worker.ReportProgress(71, "Executando teste de gravação/leitura...")
 
-            ' CORREÇÃO: drive recebido já foi processado (letra pura, ex: "E").
-            ' O caminho correto é drive + ":\" + arquivo.
             Dim testFile As String = drive & ":\test_integrity.tmp"
             Dim testData(1024 * 1024 - 1) As Byte
-
             Dim rnd As New Random()
             rnd.NextBytes(testData)
 
@@ -1580,9 +1492,7 @@ Public Class FormPrincipal
             End If
 
             Thread.Sleep(2000)
-
             FinalizarProcessosRelacionados()
-
             HabilitarBotoes()
 
             Dim btnCancelar As Button = Me.Controls.Find("btnCancelar", True).FirstOrDefault()
@@ -1605,13 +1515,13 @@ Public Class FormPrincipal
                  "1. Use 'Remover Hardware com Segurança' (ícone ⏏ na bandeja)" & vbCrLf &
                  "2. Aguarde a confirmação do Windows" & vbCrLf &
                  "3. Remova o cartão SD fisicamente" & vbCrLf &
-                "4. Aguarde 30 segundos" & vbCrLf &
+                 "4. Aguarde 30 segundos" & vbCrLf &
                  "5. Reinsira o cartão" & vbCrLf &
                  "6. Formate novamente usando 'Formatação Rápida'" & vbCrLf & vbCrLf &
                  "O cartão pode estar em estado inconsistente e precisará ser formatado.",
                  "Operação Cancelada",
-             MessageBoxButtons.OK,
-            MessageBoxIcon.Information)
+                 MessageBoxButtons.OK,
+                 MessageBoxIcon.Information)
 
         Catch ex As Exception
             AdicionarLog($"Erro ao cancelar: {ex.Message}", Color.Red)
@@ -1627,25 +1537,17 @@ Public Class FormPrincipal
     Private Sub FinalizarProcessosRelacionados()
         Try
             AdicionarLog("Finalizando processos DISKPART...", Color.Yellow)
-
             Dim processosFinalizados As Integer = 0
 
-            ' CORREÇÃO: Matar todos os processos "cmd.exe" do sistema é destrutivo.
-            ' Apenas "diskpart" pode ser encerrado com segurança aqui, pois é um processo
-            ' dedicado. Matar cmd.exe genérico pode afetar outros processos do sistema.
-            ' Para encerrar o cmd da formatação corretamente, guarde a referência ao Process
-            ' e chame Kill() diretamente (veja FormatarDisco e FormatarComVerificacaoSetores).
             For Each proc As Process In Process.GetProcesses()
                 Try
                     Dim nomeProcesso As String = proc.ProcessName.ToLower()
-
                     If nomeProcesso = "diskpart" Then
                         proc.Kill()
                         proc.WaitForExit(3000)
                         processosFinalizados += 1
                         AdicionarLog($"Processo '{proc.ProcessName}' finalizado", Color.Gray)
                     End If
-
                 Catch ex As Exception
                 End Try
             Next
@@ -1660,7 +1562,6 @@ Public Class FormPrincipal
             AdicionarLog($"Aviso ao finalizar processos: {ex.Message}", Color.Orange)
         End Try
     End Sub
-
     Private Sub BackgroundWorker_ProgressChanged(sender As Object, e As System.ComponentModel.ProgressChangedEventArgs) Handles backgroundWorker.ProgressChanged
         Dim progressBar As ProgressBar = Me.Controls.Find("progressBar", True).FirstOrDefault()
 
@@ -1677,9 +1578,11 @@ Public Class FormPrincipal
             End If
 
             AdicionarLog($"[{e.ProgressPercentage}%] {e.UserState}", cor)
+
         ElseIf e.ProgressPercentage = -1 Then
             AdicionarLog($"✗ {e.UserState}", Color.Red)
             MostrarErro("Erro na Operação", e.UserState.ToString())
+
         ElseIf e.ProgressPercentage = -2 Then
             AdicionarLog($"⚠ {e.UserState}", Color.Orange)
             MostrarAviso("Atenção", e.UserState.ToString())
@@ -1698,6 +1601,7 @@ Public Class FormPrincipal
             AdicionarLog("═══════════════════════════════════════", Color.White)
             AdicionarLog("⚠ Operação foi cancelada", Color.Orange)
             AtualizarInfoUnidade()
+
         ElseIf e.Error IsNot Nothing Then
             If TypeOf e.Error Is OperationCanceledException Then
                 AdicionarLog("═══════════════════════════════════════", Color.White)
@@ -1705,11 +1609,13 @@ Public Class FormPrincipal
             Else
                 MostrarErro("Erro Fatal", e.Error.Message)
             End If
+
         Else
             AdicionarLog("═══════════════════════════════════════", Color.White)
             AtualizarInfoUnidade()
         End If
     End Sub
+
     Private Sub AdicionarLog(mensagem As String, cor As Color)
         If Me.InvokeRequired Then
             Me.Invoke(Sub() AdicionarLog(mensagem, cor))
@@ -1775,4 +1681,3 @@ Public Class FormPrincipal
     End Sub
 
 End Class
-
