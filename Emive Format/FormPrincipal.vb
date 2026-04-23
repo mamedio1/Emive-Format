@@ -829,19 +829,9 @@ Public Class FormPrincipal
             Dim drivePath As String = selectedDrive
             If Not drivePath.EndsWith("\") Then drivePath &= "\"
 
-            ' 1️⃣ CRIAR PASTAS EZVIZ
-            Dim pastaEZVIZ As String = Path.Combine(drivePath, "EZVIZ")
-            If Not Directory.Exists(pastaEZVIZ) Then
-                Directory.CreateDirectory(pastaEZVIZ)
-                Directory.CreateDirectory(Path.Combine(pastaEZVIZ, "Record"))
-                Directory.CreateDirectory(Path.Combine(pastaEZVIZ, "Picture"))
-                Directory.CreateDirectory(Path.Combine(pastaEZVIZ, "Log"))
-                worker.ReportProgress(87, "✓ Pastas EZVIZ criadas!")
-            End If
-
-            ' 2️⃣ CRIAR CONFIG.INI
+            ' 1️⃣ CRIAR CONFIG.INI NA RAIZ
             worker.ReportProgress(87, "Criando arquivo config.ini...")
-            Dim configPath As String = Path.Combine(pastaEZVIZ, "config.ini")
+            Dim configPath As String = Path.Combine(drivePath, "config.ini")
             Using sw As New StreamWriter(configPath)
                 sw.WriteLine("[EZVIZ]")
                 sw.WriteLine("Version=2.0")
@@ -852,37 +842,35 @@ Public Class FormPrincipal
             End Using
             worker.ReportProgress(87, "✓ Arquivo config.ini criado!")
 
-            ' 3️⃣ CRIAR 236 ARQUIVOS .MP4 - VERSÃO RÁPIDA ⚡
-            worker.ReportProgress(88, "Criando 236 arquivos de vídeo (30-60 segundos)...")
+            ' 2️⃣ CRIAR 236 ARQUIVOS .MP4 NA RAIZ
+            worker.ReportProgress(88, "Criando 236 arquivos de vídeo na raiz...")
             Dim tamanhoMP4 As Long = 268435456 ' 256 MB
-            Dim pastaRecord As String = Path.Combine(pastaEZVIZ, "Record")
 
             For i As Integer = 0 To 235
                 Dim nomeArquivo As String = $"hiv{i:D5}.mp4"
-                Dim caminhoCompleto As String = Path.Combine(pastaRecord, nomeArquivo)
+                Dim caminhoCompleto As String = Path.Combine(drivePath, nomeArquivo)
 
-                ' 🚀 MÉTODO RÁPIDO: SetLength ao invés de escrever bloco por bloco
                 Using fs As New FileStream(caminhoCompleto, FileMode.Create, FileAccess.Write)
-                    fs.SetLength(tamanhoMP4) ' Reserva espaço instantaneamente
+                    fs.SetLength(tamanhoMP4)
                 End Using
 
-                If i Mod 10 = 0 Then
+                If i Mod 20 = 0 Then
                     Dim percentual As Integer = 88 + CInt((i / 236) * 4)
-                    worker.ReportProgress(percentual, $"Criando: {i + 1}/236...")
+                    worker.ReportProgress(percentual, $"Arquivos: {i + 1}/236...")
                 End If
             Next
 
             worker.ReportProgress(92, "✓ 236 arquivos .mp4 criados!")
 
-            ' 4️⃣ CRIAR ARQUIVOS .BIN - TAMBÉM USANDO SetLength
-            worker.ReportProgress(93, "Criando arquivos de índice...")
-            CriarArquivoBinRapido(Path.Combine(pastaEZVIZ, "index00.bin"), 16777216)
-            CriarArquivoBinRapido(Path.Combine(pastaEZVIZ, "index01.bin"), 16777216)
-            CriarArquivoBinRapido(Path.Combine(pastaEZVIZ, "logMainFile.bin"), 32004192)
-            CriarArquivoBinRapido(Path.Combine(pastaEZVIZ, "logCurFile.bin"), 16002048)
+            ' 3️⃣ CRIAR ARQUIVOS .BIN NA RAIZ
+            worker.ReportProgress(93, "Criando arquivos de índice na raiz...")
+            CriarArquivoBinRapido(Path.Combine(drivePath, "index00.bin"), 16777216)
+            CriarArquivoBinRapido(Path.Combine(drivePath, "index01.bin"), 16777216)
+            CriarArquivoBinRapido(Path.Combine(drivePath, "logMainFile.bin"), 32004192)
+            CriarArquivoBinRapido(Path.Combine(drivePath, "logCurFile.bin"), 16002048)
 
             worker.ReportProgress(99, "✓ Índices criados!")
-            worker.ReportProgress(100, "✓ Cartão EZVIZ pronto para a câmera!")
+            worker.ReportProgress(100, "✓ Cartão EZVIZ pronto - TUDO NA RAIZ!")
 
         Catch ex As Exception
             worker.ReportProgress(-1, $"❌ Erro: {ex.Message}")
