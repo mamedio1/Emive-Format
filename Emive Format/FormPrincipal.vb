@@ -1,8 +1,9 @@
 ﻿Imports System.IO
+Imports System.IO.Compression
 Imports System.Management
 Imports System.Runtime.InteropServices
-Imports System.Threading
 Imports System.Security.Principal
+Imports System.Threading
 
 Public Class FormPrincipal
     Inherits System.Windows.Forms.Form
@@ -202,7 +203,7 @@ Public Class FormPrincipal
         Dim gbAcoes As New GroupBox With {
             .Text = "Ações",
             .Location = New Point(20, yPos),
-            .Size = New Size(840, 80),
+            .Size = New Size(840, 120),
             .Font = New Font("Segoe UI", 10, FontStyle.Bold)
         }
         Me.Controls.Add(gbAcoes)
@@ -251,6 +252,36 @@ Public Class FormPrincipal
         btnRecuperar.FlatAppearance.BorderSize = 0
         AddHandler btnRecuperar.Click, AddressOf BtnRecuperar_Click
         gbAcoes.Controls.Add(btnRecuperar)
+
+        Dim btnClonar As New Button With {
+    .Name = "btnClonar",
+    .Text = "[C] CLONAR CARTÃO",
+    .Location = New Point(20, 75),
+    .Size = New Size(200, 35),
+    .BackColor = Color.FromArgb(52, 152, 219),
+    .ForeColor = Color.White,
+    .FlatStyle = FlatStyle.Flat,
+    .Font = New Font("Segoe UI", 11, FontStyle.Bold),
+    .Cursor = Cursors.Hand
+}
+        btnClonar.FlatAppearance.BorderSize = 0
+        AddHandler btnClonar.Click, AddressOf BtnClonar_Click
+        gbAcoes.Controls.Add(btnClonar)
+
+        Dim btnRestaurar As New Button With {
+    .Name = "btnRestaurar",
+    .Text = "[X] RESTAURAR CLONE",
+    .Location = New Point(230, 75),
+    .Size = New Size(200, 35),
+    .BackColor = Color.FromArgb(155, 89, 182),
+    .ForeColor = Color.White,
+    .FlatStyle = FlatStyle.Flat,
+    .Font = New Font("Segoe UI", 11, FontStyle.Bold),
+    .Cursor = Cursors.Hand
+}
+        btnRestaurar.FlatAppearance.BorderSize = 0
+        AddHandler btnRestaurar.Click, AddressOf BtnRestaurar_Click
+        gbAcoes.Controls.Add(btnRestaurar)
 
         Dim btnSobre As New Button With {
             .Name = "btnSobre",
@@ -597,6 +628,10 @@ Public Class FormPrincipal
                 ExecutarVerificacao(worker)
             Case "REPAIR"
                 ExecutarRecuperacao(worker)
+            Case "CLONE"
+                ClonarCartao(worker)  ' ← NOVO
+            Case "RESTORE"
+                RestaurarClone(worker)  ' ← NOVO
         End Select
     End Sub
     Private Sub ExecutarFormatacao(worker As System.ComponentModel.BackgroundWorker)
@@ -1666,6 +1701,321 @@ Public Class FormPrincipal
 
     Private Sub MostrarAviso(titulo As String, mensagem As String)
         MessageBox.Show(mensagem, titulo, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+    End Sub
+
+    Private Sub BtnClonar_Click(sender As Object, e As EventArgs)
+        Dim cbo As ComboBox = Me.Controls.Find("cboUnidades", True).FirstOrDefault()
+        If cbo Is Nothing OrElse cbo.SelectedItem Is Nothing Then
+            MostrarErro("Nenhuma unidade selecionada!", "Selecione o cartão EZVIZ formatado antes de clonar.")
+            Return
+        End If
+
+        Dim resultado As DialogResult = MessageBox.Show(
+            $"Criar uma cópia (clone) do cartão {selectedDrive}?" & vbCrLf & vbCrLf &
+            "Este processo pode demorar vários minutos dependendo do tamanho do cartão." & vbCrLf & vbCrLf &
+            "O arquivo será salvo em:" & vbCrLf &
+            "C:\EMIVE_Clones\CartaoEZVIZ.img",
+            "Clonar Cartão EZVIZ",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question)
+
+        If resultado = DialogResult.Yes Then
+            DesabilitarBotoes()
+            AdicionarLog("═══════════════════════════════════════", Color.White)
+            AdicionarLog("📀 Iniciando clonagem do cartão...", Color.Cyan)
+            backgroundWorker.RunWorkerAsync("CLONE")
+        End If
+    End Sub
+
+    Private Sub BtnRestaurar_Click(sender As Object, e As EventArgs)
+        Dim cbo As ComboBox = Me.Controls.Find("cboUnidades", True).FirstOrDefault()
+        If cbo Is Nothing OrElse cbo.SelectedItem Is Nothing Then
+            MostrarErro("Nenhuma unidade selecionada!", "Selecione um cartão SD vazio antes de restaurar.")
+            Return
+        End If
+
+        Dim clonePath As String = "C:\EMIVE_Clones\CartaoEZVIZ.img"
+        If Not File.Exists(clonePath) Then
+            MostrarErro("Clone não encontrado!", $"O arquivo {clonePath} não existe." & vbCrLf & vbCrLf & "Clone um cartão primeiro!")
+            Return
+        End If
+
+        Dim resultado As DialogResult = MessageBox.Show(
+            $"⚠ ATENÇÃO! Todos os dados de {selectedDrive} serão APAGADOS!" & vbCrLf & vbCrLf &
+            "Restaurar o clone do cartão EZVIZ nesta unidade?",
+            "Restaurar Clone",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning)
+
+        If resultado = DialogResult.Yes Then
+            DesabilitarBotoes()
+            AdicionarLog("═══════════════════════════════════════", Color.White)
+            AdicionarLog("💾 Iniciando restauração do clone...", Color.Yellow)
+            backgroundWorker.RunWorkerAsync("RESTORE")
+        End If
+    End Sub
+
+    Private Sub ClonarCartao(worker As System.ComponentModel.BackgroundWorker)
+        Try
+            Dim driveLocal As String = ""
+            Me.Invoke(Sub() driveLocal = selectedDrive)
+
+            worker.ReportProgress(5, "Obtendo número do disco físico...")
+            Dim numeroDisco As Integer = ObterNumeroDisco(driveLocal.Replace("\", ""))
+            If numeroDisco < 0 Then
+                Throw New Exception("Não foi possível identificar o disco físico.")
+            End If
+
+            worker.ReportProgress(10, $"Disco {numeroDisco} identificado")
+
+            Dim pastaClones As String = "C:\EMIVE_Clones"
+            If Not Directory.Exists(pastaClones) Then
+                Directory.CreateDirectory(pastaClones)
+            End If
+
+            Dim arquivoClone As String = Path.Combine(pastaClones, "CartaoEZVIZ_Clone.img")
+            If File.Exists(arquivoClone) Then
+                File.Delete(arquivoClone)
+            End If
+
+            worker.ReportProgress(15, "Criando clone bit-a-bit do cartão...")
+            worker.ReportProgress(20, "⚠ Este processo pode demorar vários minutos...")
+
+            ' Criar clone usando DD (equivalente Windows)
+            Dim processo As New Process()
+            processo.StartInfo.FileName = "cmd.exe"
+            processo.StartInfo.Arguments = $"/c wmic diskdrive where index={numeroDisco} get size"
+            processo.StartInfo.UseShellExecute = False
+            processo.StartInfo.RedirectStandardOutput = True
+            processo.StartInfo.CreateNoWindow = True
+            processo.Start()
+
+            Dim output As String = processo.StandardOutput.ReadToEnd()
+            processo.WaitForExit()
+
+            ' Parsear tamanho do disco
+            Dim lines() As String = output.Split(New String() {vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
+            Dim tamanhoBytes As Long = 0
+            If lines.Length > 1 Then
+                Long.TryParse(lines(1).Trim(), tamanhoBytes)
+            End If
+
+            If tamanhoBytes = 0 Then
+                Throw New Exception("Não foi possível determinar o tamanho do disco.")
+            End If
+
+            Dim tamanhoGB As Double = tamanhoBytes / 1024.0 / 1024.0 / 1024.0
+            worker.ReportProgress(25, $"Tamanho do cartão: {tamanhoGB:F2} GB")
+
+            ' Ler disco fisicamente
+            Dim devicePath As String = $"\\.\PhysicalDrive{numeroDisco}"
+            worker.ReportProgress(30, "Lendo dados brutos do cartão...")
+
+            Dim bufferSize As Integer = 1048576 ' 1 MB por vez
+            Dim buffer(bufferSize - 1) As Byte
+            Dim totalLido As Long = 0
+
+            Using sourceStream As New FileStream(devicePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                Using destStream As New FileStream(arquivoClone, FileMode.Create, FileAccess.Write)
+                    Dim bytesLidos As Integer
+                    Do
+                        bytesLidos = sourceStream.Read(buffer, 0, bufferSize)
+                        If bytesLidos > 0 Then
+                            destStream.Write(buffer, 0, bytesLidos)
+                            totalLido += bytesLidos
+
+                            Dim percentual As Integer = 30 + CInt((totalLido / tamanhoBytes) * 65)
+                            Dim mbLidos As Long = totalLido / 1024 / 1024
+                            Dim mbTotal As Long = tamanhoBytes / 1024 / 1024
+                            worker.ReportProgress(Math.Min(percentual, 95), $"Clonando: {mbLidos} MB / {mbTotal} MB...")
+                        End If
+                    Loop While bytesLidos > 0
+                End Using
+            End Using
+
+            worker.ReportProgress(98, "Finalizando clone...")
+            Dim tamanhoCloneMB As Long = New FileInfo(arquivoClone).Length / 1024 / 1024
+
+            worker.ReportProgress(100, $"✓ Clone bit-a-bit criado! ({tamanhoCloneMB} MB)")
+            AdicionarLog($"📁 Arquivo salvo em: {arquivoClone}", Color.LightGreen)
+            AdicionarLog("Este é um clone FIEL do cartão inteiro (incluindo partições e boot)", Color.Cyan)
+
+        Catch ex As UnauthorizedAccessException
+            worker.ReportProgress(-1, "❌ Erro: Execute o programa como ADMINISTRADOR para clonar!")
+        Catch ex As Exception
+            worker.ReportProgress(-1, $"Erro ao clonar: {ex.Message}")
+        End Try
+    End Sub
+
+    Private Function CalcularHashCartao(devicePath As String, worker As System.ComponentModel.BackgroundWorker) As String
+        Try
+            Using sha1 As New System.Security.Cryptography.SHA1CryptoServiceProvider()
+                Using stream As New FileStream(devicePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                    Dim bufferSize As Integer = 8388608 ' 8 MB - Buffer otimizado
+                    Dim buffer(bufferSize - 1) As Byte
+                    Dim bytesLidos As Integer
+                    Dim totalLido As Long = 0
+                    Dim tamanho As Long = stream.Length
+                    Dim ultimoPercentual As Integer = -1
+
+                    Do
+                        bytesLidos = stream.Read(buffer, 0, bufferSize)
+                        If bytesLidos > 0 Then
+                            sha1.TransformBlock(buffer, 0, bytesLidos, buffer, 0)
+                            totalLido += bytesLidos
+
+                            Dim percentual As Integer = CInt((totalLido / tamanho) * 100)
+                            ' Atualizar progresso só a cada 5% para não sobrecarregar a UI
+                            If percentual <> ultimoPercentual AndAlso percentual Mod 5 = 0 Then
+                                worker.ReportProgress(percentual, $"Calculando hash: {percentual}%...")
+                                ultimoPercentual = percentual
+                            End If
+                        End If
+                    Loop While bytesLidos > 0
+
+                    sha1.TransformFinalBlock(buffer, 0, 0)
+                    Return BitConverter.ToString(sha1.Hash).Replace("-", "").ToLower()
+                End Using
+            End Using
+        Catch ex As Exception
+            Return ""
+        End Try
+    End Function
+
+    Private Sub VerificarClone(worker As System.ComponentModel.BackgroundWorker)
+        Try
+            worker.ReportProgress(5, "Obtendo número do disco original...")
+            Dim driveLocal As String = ""
+            Me.Invoke(Sub() driveLocal = selectedDrive)
+
+            Dim numeroDisco As Integer = ObterNumeroDisco(driveLocal.Replace("\", ""))
+            If numeroDisco < 0 Then
+                Throw New Exception("Não foi possível identificar o disco.")
+            End If
+
+            Dim devicePath As String = $"\\.\PhysicalDrive{numeroDisco}"
+            Dim arquivoClone As String = "C:\EMIVE_Clones\CartaoEZVIZ_Clone.img"
+
+            If Not File.Exists(arquivoClone) Then
+                Throw New Exception("Clone não encontrado!")
+            End If
+
+            worker.ReportProgress(10, "Calculando hash SHA1 do cartão original...")
+            worker.ReportProgress(11, "⏳ Aguarde, pode demorar alguns minutos...")
+            Dim hashOriginal As String = CalcularHashCartao(devicePath, worker)
+
+            worker.ReportProgress(50, "Calculando hash SHA1 do arquivo de clone...")
+            Dim hashClone As String = ""
+            Using sha1 As New System.Security.Cryptography.SHA1CryptoServiceProvider()
+                Using stream As New FileStream(arquivoClone, FileMode.Open, FileAccess.Read)
+                    Dim bufferSize As Integer = 8388608 ' 8 MB
+                    Dim buffer(bufferSize - 1) As Byte
+                    Dim bytesLidos As Integer
+                    Dim totalLido As Long = 0
+                    Dim tamanho As Long = stream.Length
+                    Dim ultimoPercentual As Integer = -1
+
+                    Do
+                        bytesLidos = stream.Read(buffer, 0, bufferSize)
+                        If bytesLidos > 0 Then
+                            sha1.TransformBlock(buffer, 0, bytesLidos, buffer, 0)
+                            totalLido += bytesLidos
+
+                            Dim percentual As Integer = 50 + CInt((totalLido / tamanho) * 40)
+                            If percentual <> ultimoPercentual AndAlso percentual Mod 5 = 0 Then
+                                worker.ReportProgress(percentual, $"Hash do clone: {percentual - 50}%...")
+                                ultimoPercentual = percentual
+                            End If
+                        End If
+                    Loop While bytesLidos > 0
+
+                    sha1.TransformFinalBlock(buffer, 0, 0)
+                    hashClone = BitConverter.ToString(sha1.Hash).Replace("-", "").ToLower()
+                End Using
+            End Using
+
+            worker.ReportProgress(95, "Comparando hashes SHA1...")
+            Thread.Sleep(500)
+
+            If hashOriginal = hashClone Then
+                worker.ReportProgress(100, "✓ CLONE IDÊNTICO! Hash SHA1 corresponde 100%")
+                AdicionarLog("═══════════════════════════════════════", Color.White)
+                AdicionarLog($"Hash Original: {hashOriginal}", Color.LightGreen)
+                AdicionarLog($"Hash Clone:    {hashClone}", Color.LightGreen)
+                AdicionarLog("✓ Clone verificado com sucesso!", Color.Cyan)
+            Else
+                worker.ReportProgress(100, "⚠ CLONE DIFERENTE! Hashes não correspondem")
+                AdicionarLog("═══════════════════════════════════════", Color.White)
+                AdicionarLog($"Hash Original: {hashOriginal}", Color.Red)
+                AdicionarLog($"Hash Clone:    {hashClone}", Color.Red)
+                AdicionarLog("❌ ATENÇÃO: Clone pode estar corrompido!", Color.Orange)
+            End If
+
+        Catch ex As UnauthorizedAccessException
+            worker.ReportProgress(-1, "❌ Erro: Execute como ADMINISTRADOR para verificar!")
+        Catch ex As Exception
+            worker.ReportProgress(-1, $"Erro na verificação: {ex.Message}")
+        End Try
+    End Sub
+
+
+
+    Private Sub RestaurarClone(worker As System.ComponentModel.BackgroundWorker)
+        Try
+            Dim driveLocal As String = ""
+            Me.Invoke(Sub() driveLocal = selectedDrive)
+
+            worker.ReportProgress(5, "Obtendo número do disco físico...")
+            Dim numeroDisco As Integer = ObterNumeroDisco(driveLocal.Replace("\", ""))
+            If numeroDisco < 0 Then
+                Throw New Exception("Não foi possível identificar o disco físico.")
+            End If
+
+            Dim arquivoClone As String = "C:\EMIVE_Clones\CartaoEZVIZ_Clone.img"
+            If Not File.Exists(arquivoClone) Then
+                Throw New Exception($"Clone não encontrado em {arquivoClone}")
+            End If
+
+            worker.ReportProgress(10, $"Restaurando para Disco {numeroDisco}...")
+            worker.ReportProgress(15, "⚠ Gravando dados brutos no cartão...")
+
+            Dim devicePath As String = $"\\.\PhysicalDrive{numeroDisco}"
+            Dim bufferSize As Integer = 1048576 ' 1 MB
+            Dim buffer(bufferSize - 1) As Byte
+            Dim totalEscrito As Long = 0
+            Dim tamanhoClone As Long = New FileInfo(arquivoClone).Length
+
+            Using sourceStream As New FileStream(arquivoClone, FileMode.Open, FileAccess.Read)
+                Using destStream As New FileStream(devicePath, FileMode.Open, FileAccess.Write, FileShare.ReadWrite)
+                    Dim bytesLidos As Integer
+                    Do
+                        bytesLidos = sourceStream.Read(buffer, 0, bufferSize)
+                        If bytesLidos > 0 Then
+                            destStream.Write(buffer, 0, bytesLidos)
+                            totalEscrito += bytesLidos
+
+                            Dim percentual As Integer = 15 + CInt((totalEscrito / tamanhoClone) * 80)
+                            Dim mbEscritos As Long = totalEscrito / 1024 / 1024
+                            Dim mbTotal As Long = tamanhoClone / 1024 / 1024
+                            worker.ReportProgress(Math.Min(percentual, 95), $"Restaurando: {mbEscritos} MB / {mbTotal} MB...")
+                        End If
+                    Loop While bytesLidos > 0
+
+                    destStream.Flush()
+                End Using
+            End Using
+
+            worker.ReportProgress(98, "Sincronizando dados...")
+            Thread.Sleep(2000)
+
+            worker.ReportProgress(100, "✓ Clone restaurado com sucesso!")
+            AdicionarLog("Cartão restaurado bit-a-bit. Remova e reinsira para o Windows reconhecer.", Color.LightGreen)
+
+        Catch ex As UnauthorizedAccessException
+            worker.ReportProgress(-1, "❌ Erro: Execute o programa como ADMINISTRADOR para restaurar!")
+        Catch ex As Exception
+            worker.ReportProgress(-1, $"Erro ao restaurar: {ex.Message}")
+        End Try
     End Sub
 
 End Class

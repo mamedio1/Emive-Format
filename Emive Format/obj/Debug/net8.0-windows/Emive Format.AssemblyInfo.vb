@@ -16,7 +16,7 @@ Imports System.Reflection
 <Assembly: System.Reflection.AssemblyCompanyAttribute("Emive Format"),  _
  Assembly: System.Reflection.AssemblyConfigurationAttribute("Debug"),  _
  Assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0"),  _
- Assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9229f7e1b8da42d87183d7ba93418f7ba018fa27"),  _
+ Assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b7ff9919d00d0edead611464b83d42554a849aa4"),  _
  Assembly: System.Reflection.AssemblyProductAttribute("Emive Format"),  _
  Assembly: System.Reflection.AssemblyTitleAttribute("Emive Format"),  _
  Assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0"),  _
